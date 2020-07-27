@@ -6,14 +6,20 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.parse.FindCallback;
+import com.parse.GetCallback;
 import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseInstallation;
 import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.SaveCallback;
 import com.shashank.sony.fancytoastlib.FancyToast;
+
+import java.util.List;
 
 public class SignUpActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -22,7 +28,9 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     private EditText mPPower;
     private EditText mKSpeed;
     private EditText mKPower;
-    private Button mSave;
+    private Button mSave, mGetAllKickBoxer;
+    private TextView txtGetData;
+    private String mAllKickBoxers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,19 +38,35 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         setContentView(R.layout.activity_sign_up);
         ParseInstallation.getCurrentInstallation().saveInBackground();
 
+        mAllKickBoxers="";
         mName=findViewById(R.id.txtName);
         mPSpeed=findViewById(R.id.txtPunchSpeed);
         mPPower=findViewById(R.id.txtPunchPower);
         mKSpeed=findViewById(R.id.txtKickSpeed);
         mKPower=findViewById(R.id.txtKickPower);
         mSave=findViewById(R.id.btnSave);
+        mGetAllKickBoxer=findViewById(R.id.btnGetAll);
+        mGetAllKickBoxer.setOnClickListener(SignUpActivity.this);
+        txtGetData=findViewById(R.id.txtGetData);
+        txtGetData.setOnClickListener(SignUpActivity.this);
 
         mSave.setOnClickListener(SignUpActivity.this);
     }
 
     @Override
     public void onClick(View v) {
-        SaveClicked();
+        switch (v.getId()){
+            case R.id.btnSave:
+                SaveClicked();
+                break;
+            case R.id.txtGetData:
+                LoadData();
+                break;
+            case R.id.btnGetAll:
+                LoadAllData();
+                break;
+        }
+
     }
 
     public void SaveClicked(){
@@ -87,5 +111,45 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         }
 
 
+    }
+    public void LoadData(){
+        ParseQuery<ParseObject> parseQuery=ParseQuery.getQuery("KickBoxer");
+        parseQuery.getInBackground("nVgxTwBsoJ", new GetCallback<ParseObject>() {
+            @Override
+            public void done(ParseObject object, ParseException e) {
+                if(object!=null && e==null){
+                    txtGetData.setText(object.get("name")+"\nPunch Power: "+object.get("punch_power")+
+                            "\nPunch Speed: "+object.get("punch_speed"));
+                }
+                else {
+                    FancyToast.makeText(SignUpActivity.this,e.getMessage(),FancyToast.LENGTH_LONG,FancyToast.ERROR,true).show();
+                }
+            }
+        });
+    }
+
+    public void LoadAllData(){
+        ParseQuery<ParseObject> queryGetAll=ParseQuery.getQuery("KickBoxer");
+        queryGetAll.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects, ParseException e) {
+                if(e==null){
+                    if(objects.size()>0){
+                        for(ParseObject kickBoxer:objects){
+                            mAllKickBoxers+=kickBoxer.getObjectId()+" ";
+                        }
+                        txtGetData.setText(mAllKickBoxers);
+                        //FancyToast.makeText(SignUpActivity.this,"Success full",FancyToast.LENGTH_LONG,FancyToast.SUCCESS,true).show();
+                    }
+                    else {
+                        FancyToast.makeText(SignUpActivity.this,"size 0",FancyToast.LENGTH_LONG,FancyToast.ERROR,true).show();
+                    }
+
+                }
+                else{
+                    FancyToast.makeText(SignUpActivity.this,e.getMessage(),FancyToast.LENGTH_LONG,FancyToast.ERROR,true).show();
+                }
+            }
+        });
     }
 }
